@@ -28,7 +28,7 @@ class MeuFireParser:
             if not inspect.isfunction(obj):
                 continue
             # Verifica se a função foi definida neste módulo (não importada)
-            if inspect.getmodule(obj) == self.modulo:
+            if obj.__module__ == self.modulo.__name__:
                 funcoes[nome] = obj
         return funcoes
     
@@ -198,7 +198,9 @@ class MeuFireParser:
         # Parse dos argumentos
         kwargs = {}
         args_restantes = args[1:]
-        
+        posicionais_esperados = [p for p in parametros if p[2]]  # (nome, tipo, obrig, default)
+        pos_idx = 0  # quantos posicionais já foram consumidos
+
         i = 0
         while i < len(args_restantes):
             arg = args_restantes[i]
@@ -246,8 +248,17 @@ class MeuFireParser:
                         print(f"Erro: {e}")
                         sys.exit(1)
             else:
-                print(f"Erro: Argumento inesperado '{arg}'")
-                sys.exit(1)
+                if pos_idx >= len(posicionais_esperados):
+                    print(f"Erro: Argumento posicional inesperado '{arg}'")
+                    sys.exit(1)
+                pname, ptype, _, _ = posicionais_esperados[pos_idx]
+                try:
+                    kwargs[pname] = self._converter_argumento(arg, ptype)
+                    pos_idx += 1
+                    i += 1
+                except TypeError as e:
+                    print(f"Erro: Parâmetro '{pname}' esperava {ptype.__name__}, recebeu '{arg}'")
+                    sys.exit(1)
         
         # Valida obrigatórios
         for pname, ptype, eh_obrigatorio, pvalue in parametros:
@@ -259,7 +270,7 @@ class MeuFireParser:
         try:
             resultado = funcao(**kwargs)
             if resultado is not None:
-                print(resultado)
+                print(f"Pela funcao 'executar', resultado = {resultado}")
         except Exception as e:
             print(f"Erro ao executar '{nome_funcao}': {e}")
             sys.exit(1)

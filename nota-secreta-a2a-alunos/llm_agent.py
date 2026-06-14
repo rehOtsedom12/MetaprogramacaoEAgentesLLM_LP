@@ -111,14 +111,19 @@ class LLMAgent(BaseAgent):
             short_lyrics = lyrics[:250] if len(lyrics) > 250 else lyrics
 
             # Prompt refinado para gerar dicas criativas e ambíguas
-            prompt = f"""Crie uma dica enigmática e ambígua para esta música, em até {max_words} palavras.
-A dica deve ser criativa, não óbvia, para tornar o jogo desafiador e interessante.
-Evite mencionar gênero ou artista. Use metáforas ou associações criativas.
+            historico = ", ".join(f'"{d}"' for d in self.clue_history) if self.clue_history else "nenhuma"
 
-Letra (resumo):
-{short_lyrics}
+            prompt = f"""Você deve criar UMA dica diferente de: {historico}.
+            Dica enigmática para a música abaixo, máximo {max_words} palavras.
+            Sem artista, sem gênero. Use metáfora ou emoção.
 
-Dica (MÁXIMO {max_words} palavras, sem "Dica:", sem pontuação extra):"""
+            Letra:
+            {short_lyrics}
+
+            Nova dica ({max_words} palavras):"""
+            
+            # Verificar o prompt gerado
+            print(f"[DEBUG] Prompt rodada {self._game_round}: {prompt[:100]}")
 
             # Chamar LLM com timeout
             clue = ""
